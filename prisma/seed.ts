@@ -215,9 +215,14 @@ async function seedProperties(managerId: string) {
 
     const property = await prisma.property.upsert({
       where: { slug: item.slug },
-      update: { ...fields, amenityKeys: item.amenities },
+      update: {
+        ...fields,
+        city: "Gurugram", // Optional: agar update me bhi city change karni ho
+        amenityKeys: item.amenities,
+      },
       create: {
         ...fields,
+        city: "Gurugram", // 👈 Required 'city' field missing tha, ise add kar diya
         amenityKeys: item.amenities,
         status: "PUBLISHED",
         publishedAt: today,
@@ -307,4 +312,4 @@ async function main() {
   const { admin } = await seedUsers();
   const slugs = await seedProperties(admin.id);
   const leadCount = await seedLeads(slugs, admin.id);
-
+}
