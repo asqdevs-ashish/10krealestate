@@ -1,26 +1,443 @@
 @import "tailwindcss";
+/* Lenis ships its own reset — document height, the stopped state, iframe
+   pointer-events. Imported here so the scroll-container rules live with the
+   rest of the document styles. */
+@import "lenis/dist/lenis.css";
 
+/* ------------------------------------------------------------------
+   A SQUARE DEVS
+   Design tokens — "Bone & Ink".
+
+   Light is the default surface: warm bone paper, ink type, a deep
+   forest accent. Dark is reserved for cinematic anchors (hero, the
+   architectural sequence, the closing call).
+
+   The type/line/accent tokens are SEMANTIC and re-pointed per surface
+   via [data-tone], so a component never has to know which surface it
+   landed on. `<Section>` and every dialog/overlay set the tone.
+------------------------------------------------------------------ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* dark surfaces — the cinematic anchors */
+  --ink: #14150f;
+  --ink-2: #1b1c15;
+  --ink-3: #22241b;
+  --void: #0a0b07;
+
+  /* light surfaces — the page default */
+  --paper: #f7f4ee; /* bone */
+  --paper-2: #efe9df; /* sand band */
+  --paper-3: #e4dccc; /* inset / raised */
+  --paper-ink: #17170f;
+
+  /* type — light surface (default) */
+  --text: #17170f;
+  --text-dim: #5c5a50;
+  /* 4.62:1 on bone — metadata is small, so it has to earn AA. */
+  --text-faint: #736e63;
+
+  /* accent — deep forest, used sparingly */
+  --accent: #2f4a38;
+  --accent-2: #3e6249;
+
+  /* hairlines on light */
+  --hair: rgba(23, 23, 15, 0.13);
+  --hair-strong: rgba(23, 23, 15, 0.26);
+
+  --status-available: #2f4a38;
+  --status-reserved: #a9762f;
+  --status-sold: #aaa59a;
+
+  /* surface-driven button palette (see Action) */
+  --btn-solid-bg: var(--ink);
+  --btn-solid-fg: var(--paper);
+  --btn-ghost-border: var(--hair-strong);
+
+  /* ------------------------------------------------------------------
+     Quiet luxury — the metals register.
+
+     A second, deliberately small palette. It never overrides the bone and
+     ink system above; it is what the `night` surface and gold-accented
+     detail read from. Gold is a detail, never a field colour: hairline
+     rules, a single rule under a heading, the active state of a control.
+  ------------------------------------------------------------------ */
+  --obsidian: #0b0b0c;
+  --obsidian-2: #121214; /* deep charcoal */
+  --obsidian-3: #1a1a1d;
+  --onyx: #222226;
+
+  --gold: #d4af37; /* brushed gold */
+  --gold-soft: #c9a961;
+  --champagne: #e8d7b4; /* muted champagne */
+  --champagne-deep: #b99a5b;
+
+  /* Light elements are never pure white. */
+  --off-white: #f2efe9;
+  --soft-gray: #a8a49c;
+
+  --ease-luxe: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-curtain: cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+/* Dark anchors re-point the same semantic tokens — nothing else changes. */
+[data-tone="dark"],
+[data-tone="black"] {
+  --text: #efebe2;
+  --text-dim: #a49e92;
+  --text-faint: #857e73;
+
+  --accent: #a9c6b0;
+  --accent-2: #cfe0d2;
+
+  --hair: rgba(239, 235, 226, 0.14);
+  --hair-strong: rgba(239, 235, 226, 0.28);
+
+  --status-available: #a9c6b0;
+  --status-reserved: #c9a05e;
+  --status-sold: #6f6b64;
+
+  --btn-solid-bg: var(--paper);
+  --btn-solid-fg: var(--ink);
+  --btn-ghost-border: rgba(239, 235, 226, 0.3);
+}
+
+/* Night: obsidian and brushed gold. It re-points the same semantic names as
+   every other surface, so a component written against `text-text`, `bg-paper`
+   or `border-hair` needs no changes to sit here — only the surface class it is
+   dropped into changes. */
+[data-tone="night"] {
+  --text: var(--off-white);
+  --text-dim: #b6b1a6;
+  --text-faint: #8d887e;
+
+  --accent: var(--gold);
+  --accent-2: var(--champagne);
+
+  --hair: rgba(242, 239, 233, 0.12);
+  --hair-strong: rgba(212, 175, 55, 0.32);
+
+  --status-available: var(--champagne);
+  --status-reserved: var(--gold-soft);
+  --status-sold: #6f6b64;
+
+  --btn-solid-bg: var(--champagne);
+  --btn-solid-fg: var(--obsidian);
+  --btn-ghost-border: rgba(212, 175, 55, 0.38);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-instrument-sans), system-ui, sans-serif;
+  --font-display: var(--font-instrument-serif), Georgia, serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-void: var(--void);
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-paper-3: var(--paper-3);
+  --color-text: var(--text);
+  --color-dim: var(--text-dim);
+  --color-faint: var(--text-faint);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-hair: var(--hair);
+  --color-hair-strong: var(--hair-strong);
+
+  /* quiet luxury — obsidian surfaces and brushed metals */
+  --color-obsidian: var(--obsidian);
+  --color-obsidian-2: var(--obsidian-2);
+  --color-obsidian-3: var(--obsidian-3);
+  --color-onyx: var(--onyx);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-champagne: var(--champagne);
+  --color-champagne-deep: var(--champagne-deep);
+  --color-off-white: var(--off-white);
+  --color-soft-gray: var(--soft-gray);
+
+  /* House curves, so `ease-luxe` and `ease-curtain` exist as utilities and
+     match the JS interpolators in lib/easing.ts exactly. */
+  --ease-luxe: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-curtain: cubic-bezier(0.76, 0, 0.24, 1);
+
+  --breakpoint-3xl: 108rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+    scroll-padding-top: 6rem;
+    background: var(--paper);
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-synthesis-weight: none;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--paper);
+  }
+
+  :focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 1px;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 400;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  input,
+  select,
+  button,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  [hidden] {
+    display: none !important;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ------------------------------------------------------------------
+   Smooth scrolling (Lenis)
+
+   The base layer sets `scroll-behavior: smooth` for the no-JS case. While
+   Lenis is running that has to be switched off: Lenis writes the scroll
+   position itself every frame, and a browser-animated `smooth` on each of
+   those writes would fight the interpolation. Lenis puts `lenis-smooth` on
+   <html> while it is smoothing, so this rule is scoped to exactly that.
+------------------------------------------------------------------ */
+html.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+/* Scrollbar — thin, quiet, light */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--paper-2);
+}
+::-webkit-scrollbar-thumb {
+  background: #cdc6b6;
+  border: 2px solid var(--paper-2);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b3ab98;
+}
+
+/* ------------------------------------------------------------------
+   Editorial primitives
+------------------------------------------------------------------ */
+
+/* Metadata labels: tracked sans, not mono — softer, more editorial. */
+.u-label {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 767px) {
+  .u-label {
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
+  }
+}
+
+/* Numbers keep the mono face — figures should always align. */
+.u-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.u-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  /* 1 rather than 0.94 so masked lines never clip their descenders. */
+  line-height: 1;
+}
+
+/* Text mask reveal: each line sits in an overflow-clipped track. The padding
+   gives descenders room; the negative margin restores the tight editorial
+   rhythm the type scale is set for. */
+.u-mask {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.18em;
+  margin-bottom: -0.12em;
+}
+.u-mask > span {
+  display: block;
+  will-change: transform;
+}
+
+/* Grain over media only — never over paper. */
+.u-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.42;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+}
+
+.u-grid-lines {
+  background-image:
+    linear-gradient(to right, var(--hair) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--hair) 1px, transparent 1px);
+  background-size: 96px 96px;
+}
+
+/* ------------------------------------------------------------------
+   Range inputs — calculator
+------------------------------------------------------------------ */
+.u-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  background: transparent;
+  cursor: grab;
+}
+.u-range:active {
+  cursor: grabbing;
+}
+.u-range::-webkit-slider-runnable-track {
+  height: 1px;
+  background: var(--hair-strong);
+}
+.u-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 11px;
+  height: 11px;
+  margin-top: -5px;
+  border-radius: 999px;
+  background: var(--paper);
+  border: 1px solid var(--text);
+  transition:
+    box-shadow 0.4s var(--ease-luxe),
+    background 0.3s ease;
+}
+.u-range:hover::-webkit-slider-thumb,
+.u-range:focus-visible::-webkit-slider-thumb {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.u-range::-moz-range-track {
+  height: 1px;
+  background: var(--hair-strong);
+}
+.u-range::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  background: var(--paper);
+  border: 1px solid var(--text);
+  transition:
+    box-shadow 0.4s var(--ease-luxe),
+    background 0.3s ease;
+}
+.u-range:hover::-moz-range-thumb {
+  background: var(--accent);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* ------------------------------------------------------------------
+   Keyframes
+------------------------------------------------------------------ */
+@keyframes u-pulse {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.85;
+  }
+  70% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+@keyframes u-scroll-hint {
+  0% {
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+  40% {
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+  60% {
+    transform: scaleY(1);
+    transform-origin: bottom;
+  }
+  100% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+}
+
+@keyframes u-dash {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.u-pulse-ring {
+  animation: u-pulse 3.4s var(--ease-luxe) infinite;
+}
+
+.u-scroll-hint {
+  animation: u-scroll-hint 2.6s var(--ease-luxe) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .u-pulse-ring,
+  .u-scroll-hint {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }

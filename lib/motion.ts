@@ -1,0 +1,264 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useLenis } from "lenis/react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { easeLuxe } from "@/lib/easing";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
+
+export { gsap, ScrollTrigger };
+
+/** House easing — slow, precise, architectural. No bounce, ever. */
+export const EASE = "expo.out";
+export const EASE_IN_OUT = "power3.inOut";
+export const DUR = { fast: 0.5, base: 0.9, slow: 1.4 } as const;
+
+/**
+ * Marks a subtree whose scrolling Lenis must not consume — dialogs, sheets and
+ * any panel with its own scrollbar. Read by components/providers/LenisProvider.
+ */
+export const LENIS_PREVENT_ATTRIBUTE = "data-lenis-prevent";
+
+/** Clearance kept under the sticky header when scrolling to a section. */
+const SCROLL_HEADER_OFFSET = 72;
+
+/** Duration of a programmatic scroll, in seconds. */
+const SCROLL_DURATION = 1.15;
+
+export function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+export function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia(query);
+    const update = () => setMatches(mql.matches);
+    update();
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, [query]);
+  return matches;
+}
+
+export function useReducedMotion(): boolean {
+  return useMediaQuery("(prefers-reduced-motion: reduce)");
+}
+
+/** Locks body scroll while a menu, modal or sheet is open. */
+export function useLockBodyScroll(locked: boolean) {
+  const lenis = useLenis();
+
+  useEffect(() => {
+    if (!locked) return;
+    const previous = document.body.style.overflow;
+    const padding = document.documentElement.style.scrollbarGutter;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.scrollbarGutter = "stable";
+    // Hiding body overflow does not hold Lenis back — it scrolls the window
+    // itself — so the instance is stopped for as long as the overlay is open.
+    lenis?.stop();
+    return () => {
+      document.body.style.overflow = previous;
+      document.documentElement.style.scrollbarGutter = padding;
+      lenis?.start();
+    };
+  }, [locked, lenis]);
+}
+
+/** Scroll-linked progress (0 → 1) across an element, via GSAP ScrollTrigger. */
+export function useScrollProgress<T extends HTMLElement>(
+  ref: React.RefObject<T | null>,
+  onProgress: (progress: number) => void,
+  options: { start?: string; end?: string; enabled?: boolean } = {},
+) {
+  const { start = "top top", end = "bottom bottom", enabled = true } = options;
+  const callback = useRef(onProgress);
+  callback.current = onProgress;
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || !enabled) return;
+    // This is a listener, not an animation — reduced motion is handled by the
+    // consumer, which either animates subtly or swaps to static media.
+    const trigger = ScrollTrigger.create({
+      trigger: element,
+      start,
+      end,
+      onUpdate: (self) => callback.current(self.progress),
+      onRefresh: (self) => callback.current(self.progress),
+    });
+    return () => trigger.kill();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ref, start, end, enabled]);
+}
+
+/** Pointer-driven depth offset, damped with a rAF loop. */
+export function usePointerDepth<T extends HTMLElement>(
+  ref: React.RefObject<T | null>,
+  strength = 1,
+) {
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    if (window.matchMedia("(pointer: coarse)").matches) return;
+    if (prefersReducedMotion()) return;
+
+    const target = { x: 0, y: 0 };
+    const current = { x: 0, y: 0 };
+    let frame = 0;
+
+    const onMove = (event: PointerEvent) => {
+      const rect = element.getBoundingClientRect();
+      target.x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+      target.y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+    };
+    const onLeave = () => {
+      target.x = 0;
+      target.y = 0;
+    };
+    const loop = () => {
+      current.x += (target.x - current.x) * 0.06;
+      current.y += (target.y - current.y) * 0.06;
+      element.style.setProperty("--depth-x", (current.x * strength).toFixed(4));
+      element.style.setProperty("--depth-y", (current.y * strength).toFixed(4));
+      frame = requestAnimationFrame(loop);
+    };
+
+    element.addEventListener("pointermove", onMove);
+    element.addEventListener("pointerleave", onLeave);
+    frame = requestAnimationFrame(loop);
+    return () => {
+      element.removeEventListener("pointermove", onMove);
+      element.removeEventListener("pointerleave", onLeave);
+      cancelAnimationFrame(frame);
+    };
+  }, [ref, strength]);
+}
+
+/** Eased number animation for metrics, prices and calculators. */
+export function useCountUp(value: number, duration = 0.9) {
+  const [display, setDisplay] = useState(value);
+  const from = useRef(value);
+  const reduced = useReducedMotion();
+
+  useEffect(() => {
+    if (reduced) {
+      from.current = value;
+      setDisplay(value);
+      return;
+    }
+    const startValue = from.current;
+    const started = performance.now();
+    let frame = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - started) / (duration * 1000));
+      const eased = 1 - Math.pow(1 - t, 4);
+      setDisplay(startValue + (value - startValue) * eased);
+      if (t < 1) frame = requestAnimationFrame(tick);
+      else from.current = value;
+    };
+    frame = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(frame);
+      from.current = value;
+    };
+  }, [value, duration, reduced]);
+
+  return display;
+}
+
+/** Tallies a value once it scrolls into view. */
+export function useCountUpInView(value: number, duration = 1.2) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [armed, setArmed] = useState(false);
+  const display = useCountUp(armed ? value : 0, duration);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setArmed(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "-10% 0px -10% 0px" },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return { ref, display };
+}
+
+/** Smooth in-page scrolling with the sticky header offset applied. */
+export function useScrollToId() {
+  const lenis = useLenis();
+
+  return useCallback(
+    (id: string, behavior: ScrollBehavior = "smooth") => {
+      const element = document.getElementById(id);
+      if (!element) return false;
+
+      const top =
+        element.getBoundingClientRect().top +
+        window.scrollY -
+        SCROLL_HEADER_OFFSET;
+
+      // Lenis owns the scroll curve whenever it is mounted, so an anchor jump
+      // decelerates on the same curve as every other scroll on the site.
+      // Reduced motion is respected inside Lenis (scrolls become instant).
+      if (lenis && behavior === "smooth") {
+        lenis.scrollTo(top, { duration: SCROLL_DURATION, easing: easeLuxe });
+        return true;
+      }
+
+      window.scrollTo({
+        top,
+        behavior: prefersReducedMotion() ? "auto" : behavior,
+      });
+      return true;
+    },
+    [lenis],
+  );
+}
+
+/** Magnetic hover for primary actions. */
+export function useMagnetic<T extends HTMLElement>(strength = 6) {
+  const ref = useRef<T>(null);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    if (window.matchMedia("(pointer: coarse)").matches) return;
+    if (prefersReducedMotion()) return;
+
+    const onMove = (event: PointerEvent) => {
+      const rect = element.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+      const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+      gsap.to(element, {
+        x: x * strength,
+        y: y * strength * 0.6,
+        duration: 0.6,
+        ease: "power3.out",
+      });
+    };
+    const onLeave = () => {
+      gsap.to(element, { x: 0, y: 0, duration: 0.7, ease: "expo.out" });
+    };
+    element.addEventListener("pointermove", onMove);
+    element.addEventListener("pointerleave", onLeave);
+    return () => {
+      element.removeEventListener("pointermove", onMove);
+      element.removeEventListener("pointerleave", onLeave);
+    };
+  }, [strength]);
+  return ref;
+}

@@ -1,0 +1,285 @@
+// ---------------------------------------------------------------------------
+// A SQUARE DEVS — data contract
+//
+// Prisma 7. The connection URL is NOT declared here; it lives in
+// `prisma7.config.ts` under `datasource.url` (see the Prisma CLI skill).
+// Prisma 7 SQL projects always talk to Postgres through a driver adapter —
+// see lib/prisma.ts.
+//
+// Money is stored as whole rupees (Int) to keep JSON serialisation trivial;
+// ₹2,147,483,647 is the ceiling, which is ~₹214 Cr — above this market's
+// platinum band. Move to Decimal if sub-rupee precision is ever needed.
+// ---------------------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// --------------------------------------------------------------------- enums
+
+enum Role {
+  ADMIN
+  AGENT
+}
+
+enum PropertyStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PropertyType {
+  APARTMENT
+  PENTHOUSE
+  VILLA
+  TOWNHOUSE
+  PLOT
+  FARMHOUSE
+}
+
+/// Availability of a single residence inside a development.
+enum UnitStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  VIEWING_BOOKED
+  NEGOTIATING
+  WON
+  LOST
+}
+
+enum LeadSource {
+  WEBSITE_FORM
+  PROPERTY_ENQUIRY
+  VIEWING_REQUEST
+  WHATSAPP
+  PHONE
+  REFERRAL
+  AD_CAMPAIGN
+  WALK_IN
+}
+
+// --------------------------------------------------------------------- users
+
+/// Agents and administrators who use the CMS. There is no public sign-up:
+/// accounts are provisioned by an admin or the seed script.
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         Role      @default(AGENT)
+  phone        String?
+  title        String?
+  avatarUrl    String?
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  managedProperties Property[] @relation("PropertyManager")
+  assignedLeads     Lead[]     @relation("LeadOwner")
+  leadNotes         LeadNote[]
+
+  @@index([role])
+  @@index([isActive])
+}
+
+// ---------------------------------------------------------------- properties
+
+model Property {
+  id      String  @id @default(cuid())
+  /// URL segment — the public detail page lives at /properties/[slug].
+  slug    String  @unique
+  title   String
+  tagline String?
+
+  description String  @db.Text
+  /// Longer narrative blocks for the detail page (architect, material, light).
+  story       String? @db.Text
+
+  status     PropertyStatus @default(DRAFT)
+  type       PropertyType   @default(APARTMENT)
+  unitStatus UnitStatus     @default(AVAILABLE)
+
+  /// Whole rupees. See the file header.
+  priceInr         Int
+  priceLabel       String?
+  bookingAmountInr Int?
+
+  bedrooms   Int
+  bathrooms  Int
+  balconies  Int?
+  areaSqft   Int
+  carpetSqft Int?
+  plotSqft   Int?
+
+  floor       Int?
+  totalFloors Int?
+  facing      String?
+  furnishing  String?
+  possession  String?
+
+  city      String
+  locality  String
+  state     String?
+  country   String  @default("India")
+  address   String?
+  pincode   String?
+  latitude  Float?
+  longitude Float?
+
+  /// Curated, filterable. Free-form descriptors live in `features`.
+  amenities   String[]
+  features    String[]
+  /// Denormalised for the filter UI — kept in sync on write.
+  amenityKeys String[]
+
+  videoUrl       String?
+  virtualTourUrl String?
+  brochureUrl    String?
+
+  isFeatured   Boolean   @default(false)
+  /// Sort weight for curated rails, lower first.
+  featuredRank Int?
+  viewCount    Int       @default(0)
+  publishedAt  DateTime?
+
+  managerId String?
+  manager   User?   @relation("PropertyManager", fields: [managerId], references: [id], onDelete: SetNull)
+
+  images Image[]
+  leads  Lead[]
+  views  PropertyView[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, city])
+  @@index([status, priceInr])
+  @@index([status, bedrooms])
+  @@index([isFeatured, featuredRank])
+  @@index([city, locality])
+  @@index([managerId])
+}
+
+/// Ordered gallery assets. `position` 0 is the cover unless `isCover` is set.
+model Image {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  url         String
+  alt         String
+  caption     String?
+  blurDataUrl String?
+  width       Int
+  height      Int
+  position    Int     @default(0)
+  isCover     Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@unique([propertyId, position])
+  @@index([propertyId, isCover])
+}
+
+// --------------------------------------------------------------------- leads
+
+/// A private-viewing or enquiry lead. Never hard-deleted from the CMS —
+/// statuses move to WON / LOST so the pipeline history survives.
+model Lead {
+  id        String @id @default(cuid())
+  /// Human reference quoted on calls, e.g. VAUL-20260916.
+  reference String @unique
+
+  name  String
+  email String
+  phone String
+
+  message  String? @db.Text
+  /// Where the property-interest came from, captured at submit time.
+  interest String?
+
+  status LeadStatus @default(NEW)
+  source LeadSource @default(WEBSITE_FORM)
+
+  budgetInr          Int?
+  preferredDate      DateTime?
+  preferredTime      String?
+  /// Set when the lead converts into a booked viewing.
+  viewingScheduledAt DateTime?
+
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  ownerId String?
+  owner   User?   @relation("LeadOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  notes LeadNote[]
+
+  /// Attribution — kept for campaign reporting.
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  referrer    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([source])
+  @@index([propertyId])
+  @@index([ownerId])
+  @@index([email])
+}
+
+/// Append-only activity on a lead: calls, follow-ups, status changes.
+model LeadNote {
+  id     String @id @default(cuid())
+  leadId String
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  authorId String?
+  author   User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  /// Null for system-generated notes (status transitions).
+  body       String      @db.Text
+  isInternal Boolean     @default(true)
+  status     LeadStatus?
+
+  createdAt DateTime @default(now())
+
+  @@index([leadId, createdAt])
+  @@index([authorId])
+}
+
+// --------------------------------------------------------------------- views
+
+/// Daily view counter. One row per property per day instead of one row per
+/// hit: no personal data, cheap to aggregate, and it survives at scale.
+model PropertyView {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  day    DateTime @db.Date
+  count  Int      @default(1)
+  /// Where the view came from — "home", "search", "detail", "direct".
+  origin String?
+
+  @@unique([propertyId, day, origin])
+  @@index([propertyId, day])
+  @@index([day])
+}
