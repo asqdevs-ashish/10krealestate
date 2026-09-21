@@ -7,6 +7,15 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { easeLuxe } from "@/lib/easing";
 
 if (typeof window !== "undefined") {
+  // Hand scroll restoration to the app, before ScrollTrigger is registered.
+  // The order matters: ScrollTrigger records `history.scrollRestoration` once,
+  // when it initialises, and writes that recorded value back on every refresh —
+  // so a value set after it has started is clobbered back to “auto”, and a
+  // reload reopens the page halfway down the narrative instead of on the hero.
+  if ("scrollRestoration" in window.history) {
+    window.history.scrollRestoration = "manual";
+  }
+
   gsap.registerPlugin(ScrollTrigger);
 }
 
@@ -113,30 +122,44 @@ export function usePointerDepth<T extends HTMLElement>(
     const current = { x: 0, y: 0 };
     let frame = 0;
 
-    const onMove = (event: PointerEvent) => {
-      const rect = element.getBoundingClientRect();
-      target.x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
-      target.y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
-    };
-    const onLeave = () => {
-      target.x = 0;
-      target.y = 0;
+    // The loop exists only to settle the offset behind the pointer, so it stops
+    // as soon as it has settled and starts again on the next movement. Leaving
+    // it running would keep a frame callback alive for the life of the page,
+    // competing with the scroll and the 3D canvases for the same frame — and the
+    // hero is idle most of the time a visitor is reading it.
+    const REST = 0.0004;
+    const move = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(loop);
     };
     const loop = () => {
       current.x += (target.x - current.x) * 0.06;
       current.y += (target.y - current.y) * 0.06;
       element.style.setProperty("--depth-x", (current.x * strength).toFixed(4));
       element.style.setProperty("--depth-y", (current.y * strength).toFixed(4));
-      frame = requestAnimationFrame(loop);
+      const settled =
+        Math.abs(target.x - current.x) < REST && Math.abs(target.y - current.y) < REST;
+      frame = settled ? 0 : requestAnimationFrame(loop);
+    };
+
+    const onMove = (event: PointerEvent) => {
+      const rect = element.getBoundingClientRect();
+      target.x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+      target.y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+      move();
+    };
+    const onLeave = () => {
+      target.x = 0;
+      target.y = 0;
+      move();
     };
 
     element.addEventListener("pointermove", onMove);
     element.addEventListener("pointerleave", onLeave);
-    frame = requestAnimationFrame(loop);
     return () => {
       element.removeEventListener("pointermove", onMove);
       element.removeEventListener("pointerleave", onLeave);
-      cancelAnimationFrame(frame);
+      if (frame) cancelAnimationFrame(frame);
     };
   }, [ref, strength]);
 }

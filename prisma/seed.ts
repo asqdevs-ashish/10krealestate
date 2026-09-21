@@ -184,7 +184,7 @@ async function seedUsers() {
       name: "A Square Devs Admin",
       role: "ADMIN",
       title: "Sales Director",
-      phone: "+91 98100 45600",
+      phone: "+91 74042 96309",
       passwordHash,
     },
   });
@@ -197,7 +197,7 @@ async function seedUsers() {
       name: "Residence Advisor",
       role: "AGENT",
       title: "Property Advisor",
-      phone: "+91 98100 45601",
+      phone: "+91 74042 96309",
       passwordHash,
     },
   });

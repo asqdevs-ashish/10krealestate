@@ -12,7 +12,7 @@ export function AvailabilitySection() {
     <Section id="availability" tone="sand">
       <div className="flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <Eyebrow index="09">Availability</Eyebrow>
+          <Eyebrow index="08">Availability</Eyebrow>
           <DisplayLines
             as="h2"
             lines={["Choose your", "residence."]}

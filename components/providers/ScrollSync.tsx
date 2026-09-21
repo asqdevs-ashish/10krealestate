@@ -18,6 +18,9 @@ import { gsap, ScrollTrigger } from "@/lib/motion";
  * 2. A new route is a new document height. The measurement is redone once the
  *    new tree has painted, so triggers are never evaluated against the
  *    previous page's dimensions.
+ * 3. A cold load starts at the top. The page opens on the hero, not wherever
+ *    the last visit left off — the hero's reveal, the preloader and the scroll
+ *    choreography all assume a fresh starting position.
  */
 export function ScrollSync() {
   const lenis = useLenis();
@@ -60,6 +63,19 @@ export function ScrollSync() {
 
     return () => cancelAnimationFrame(frame);
   }, [pathname, lenis]);
+
+  // Opening the site always lands on the hero. Browser scroll restoration is
+  // already switched off in lib/motion.ts (before ScrollTrigger records it) —
+  // this puts the page back at the top regardless of what the browser managed
+  // to restore in the moment before that ran. A deep link (`/#residences`) is
+  // the exception: that is a deliberate destination and is left alone.
+  useEffect(() => {
+    if (window.location.hash) return;
+    window.scrollTo(0, 0);
+    // Lenis holds its own position, so it has to be told as well — and only
+    // once it exists, which is why this runs again when the instance arrives.
+    lenis?.scrollTo(0, { immediate: true });
+  }, [lenis]);
 
   return null;
 }

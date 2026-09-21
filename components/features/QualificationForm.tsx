@@ -180,13 +180,16 @@ export function QualificationForm({
     }
   }, []);
 
-  // Move focus to the new question so screen readers announce it.
-  const firstRender = useRef(true);
+  // Move focus to the new question so screen readers announce it — never on
+  // mount. A first-render flag is not enough to guarantee that: React runs
+  // effects twice on mount in development, and the second pass focuses the
+  // heading, which scrolls the page away from the hero before it has been read.
+  // Comparing against the previous step instead is stable in both modes.
+  const previousStep = useRef<StepId | null>(null);
   useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
+    const previous = previousStep.current;
+    previousStep.current = step;
+    if (previous === null || previous === step) return;
     headingRef.current?.focus();
   }, [step]);
 

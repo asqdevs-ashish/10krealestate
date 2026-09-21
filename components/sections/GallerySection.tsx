@@ -46,6 +46,14 @@ const HEIGHT: Record<Rhythm, string> = {
   std: "h-[clamp(240px,34vw,470px)]",
 };
 
+/** Grid entries are 5 or 7 columns of a 12-column grid, or the full width. */
+const SIZES: Record<Rhythm, string> = {
+  full: "100vw",
+  wide: "(max-width: 1279px) 92vw, 56vw",
+  tall: "(max-width: 1279px) 92vw, 56vw",
+  std: "(max-width: 1279px) 92vw, 40vw",
+};
+
 export function GallerySection({
   project = getFlagship(),
   eyebrowIndex = "07",
@@ -113,6 +121,7 @@ export function GallerySection({
                       media={item.media}
                       decorative
                       overlay="soft"
+                      sizes={SIZES[span]}
                       className="h-full w-full transition-transform duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.035]"
                     />
                   </button>
@@ -161,6 +170,7 @@ export function GallerySection({
                 media={current.media}
                 decorative
                 overlay="soft"
+                sizes="(max-width: 767px) 92vw, 70vw"
                 className="h-[clamp(240px,52vw,620px)] w-full"
               />
             </motion.div>

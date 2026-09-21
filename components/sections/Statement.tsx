@@ -26,6 +26,7 @@ export function Statement() {
                 }}
                 caption
                 index
+                sizes="(max-width: 1279px) 92vw, 40vw"
                 className="h-full w-full"
               />
             </Parallax>

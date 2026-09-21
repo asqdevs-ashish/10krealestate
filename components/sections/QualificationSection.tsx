@@ -8,7 +8,7 @@ export function QualificationSection() {
     <Section id="enquire" tone="light">
       <div className="grid gap-10 xl:grid-cols-12 xl:gap-16">
         <div className="xl:col-span-6">
-          <Eyebrow index="13" tone="light">
+          <Eyebrow index="12" tone="light">
             Private enquiry
           </Eyebrow>
           <DisplayLines

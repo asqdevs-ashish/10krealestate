@@ -53,9 +53,9 @@ npm run start      # serve the production build
 
 | Route | Purpose |
 |---|---|
-| `/` | The VAULT narrative: hero → statement → residence explorer → 3D architecture sequence → floor plan → location → lifestyle → gallery → investment calculator → availability → residents → developer → qualification funnel → contact |
+| `/` | The VAULT narrative: hero → statement → residence explorer → 3D architecture sequence → floor plan → location → lifestyle → gallery → availability → residents → developer → qualification funnel → contact |
 | `/projects` | Editorial portfolio: a featured flagship, then five projects in alternating compositions |
-| `/projects/[slug]` | Project detail — overview, architecture, property story, residences, interactive plans, live inventory, amenities, gallery, location, investment outlook, questions |
+| `/projects/[slug]` | Project detail — overview, architecture, property story, residences, interactive plans, live inventory, amenities, gallery, location, questions |
 | `/availability` | Inventory desk across all six projects, with configuration, status, price and floor filters |
 | `/book-a-viewing` | Six-step qualification and viewing flow, project-aware via `?project=` / `?residence=` |
 | `/legal/privacy` · `/legal/terms` | Demo content, data handling and pricing disclaimers |
@@ -91,9 +91,35 @@ components/
   ui/                   Action, Label, Section, Modal, PageHero, CtaBand, LegalPage, Wordmark
 data/                   the entire content model (see below)
 lib/                    plan maths, INR/area formatting, WhatsApp composition, lead matching,
-                        enquiry client, motion hooks, GSAP setup
+                        enquiry client, motion hooks, GSAP setup, GLB loader setup
 public/media/           demo photography + the hero film
+public/models/          the 3D model for section 04 (see below)
+public/draco/           the Draco decoder, served locally rather than from a CDN
 ```
+
+## The 3D model
+
+The hero is a photograph. Section 04, “Architecture in motion”, is the one place the page renders
+rather than photographs, and it reads `public/models/architecture.glb`.
+
+The file is optional. It is HEAD-checked before anything downloads it, and the section keeps its
+fallback — the drawn massing — if the file is missing, fails to load, or the device cannot run it.
+Fitted size, tint and quality live at the top of `components/features/ArchitectureCanvas.tsx`,
+along with the palette and the stage curve for the sequence.
+
+**Export it small.** A GLB is downloaded whole, and a raw Sketchfab export of a furnished site runs
+to tens of megabytes. The file in the repo was put through [glTF Transform](https://gltf.pmnd.rs) —
+meshopt geometry, WebP textures, `.glb` only:
+
+```bash
+# a spec-gloss export (three.js does not support the extension) → metal-rough
+npx @gltf-transform/cli metalrough in.glb arch.glb
+npx @gltf-transform/cli optimize arch.glb public/models/architecture.glb \
+  --compress meshopt --texture-compress webp --texture-size 2048
+```
+
+Draco and meshopt decoders are both wired up in `lib/gltf.ts`, so either compression loads as-is;
+neither decoder is fetched unless the file needs it.
 
 ## The data seam
 
@@ -138,6 +164,8 @@ film only plays while the hero is on screen, and never when reduced motion is re
 - `data/media.ts` → point each key at the client's own imagery (local path or CDN URL).
 - `data/projects.ts` → RERA numbers (currently placeholders), possession dates, price lists.
 - `public/media/vault-hero.mp4` → the real hero film.
+- `public/models/architecture.glb` → the final export, re-run through glTF Transform first (see
+  **The 3D model** above). Drop it in and nothing else changes.
 - `lib/enquiry.ts` + `app/api/enquiry/route.ts` → the CRM/email integration point.
 - `data/amenities.ts` → replace the labelled demo testimonials with verified buyer quotes.
 - `data/story.ts` / `data/faqs.ts` → the property-story chapters and the developer-level FAQ answers. The
@@ -165,12 +193,20 @@ message, and the qualification funnel shows the exact message it will send befor
 
 ## Performance
 
-- The 3D scene is client-only, code-split, and pauses its render loop when off-screen; mobile gets a
-  reduced-detail variant and any device without WebGL gets the plate sequence instead.
+- The 3D scene is client-only, code-split, and pauses its render loop when off-screen; a device
+  without WebGL gets the plate sequence instead. On a phone it renders at a lower resolution, drops
+  multisampling, and the supplied model is loaded with the expensive material features
+  (transmission, clearcoat) simplified away.
+- The model ships compressed — meshopt geometry and WebP textures, a 46 MB source export reduced to
+  10 MB — and nothing is fetched until a HEAD check says the file is actually there.
 - Above-the-fold imagery loads eagerly; everything else is lazy with explicit aspect boxes, so no
   section reflows as the page fills in.
 - Images are pre-optimised to 1500 px (≈5.7 MB for the full set); the hero film is 1.6 MB.
-- Scroll work is rAF-throttled and driven by refs — no per-frame React re-renders.
+- Scroll work is rAF-throttled and driven by refs — no per-frame React re-renders, and the hero's
+  pointer-depth loop stops as soon as the offset has settled instead of running for the life of the
+  page.
+- The hero is a still image above the fold (`priority`, so it is the LCP), with the film only mounted
+  once it is decoding and only played while it is on screen.
 
 ## Demo disclosure
 

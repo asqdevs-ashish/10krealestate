@@ -14,7 +14,6 @@ import { AvailabilityTable } from "@/components/features/AvailabilityTable";
 import { FaqSection } from "@/components/sections/FaqSection";
 import { FloorPlanSection } from "@/components/sections/FloorPlanSection";
 import { GallerySection } from "@/components/sections/GallerySection";
-import { InvestmentSection } from "@/components/sections/InvestmentSection";
 import { StorySection } from "@/components/sections/StorySection";
 
 export function generateStaticParams() {
@@ -176,7 +175,13 @@ export default async function ProjectPage(props: PageProps<"/projects/[slug]">) 
 
             <Reveal className="xl:col-span-7">
               <Parallax amount={24} className="h-[clamp(320px,52vw,620px)] w-full">
-                <MediaPlate media={architectureMedia} className="h-full w-full" caption index />
+                <MediaPlate
+                  media={architectureMedia}
+                  sizes="(max-width: 1279px) 92vw, 55vw"
+                  className="h-full w-full"
+                  caption
+                  index
+                />
               </Parallax>
             </Reveal>
           </div>
@@ -212,7 +217,11 @@ export default async function ProjectPage(props: PageProps<"/projects/[slug]">) 
                 </div>
 
                 <ClipReveal className="h-[clamp(200px,26vw,320px)] w-full">
-                  <MediaPlate media={residence.media} className="h-full w-full" />
+                  <MediaPlate
+                    media={residence.media}
+                    sizes="(max-width: 767px) 92vw, (max-width: 1279px) 45vw, 30vw"
+                    className="h-full w-full"
+                  />
                 </ClipReveal>
 
                 <h3 className="u-display text-[clamp(1.6rem,3.2vw,2.25rem)] text-text">
@@ -317,7 +326,13 @@ export default async function ProjectPage(props: PageProps<"/projects/[slug]">) 
                     }
                   >
                     <ClipReveal className="h-[clamp(240px,34vw,460px)] w-full">
-                      <MediaPlate media={cluster.media} className="h-full w-full" caption index />
+                      <MediaPlate
+                        media={cluster.media}
+                        sizes="(max-width: 1279px) 92vw, 55vw"
+                        className="h-full w-full"
+                        caption
+                        index
+                      />
                     </ClipReveal>
                   </div>
                 </div>
@@ -356,6 +371,7 @@ export default async function ProjectPage(props: PageProps<"/projects/[slug]">) 
                       caption: `Approach to ${project.name}`,
                       alt: `${project.name} approach road`,
                     }}
+                    sizes="(max-width: 1279px) 92vw, 40vw"
                     className="h-full w-full"
                     caption
                   />
@@ -389,13 +405,8 @@ export default async function ProjectPage(props: PageProps<"/projects/[slug]">) 
         </div>
       </section>
 
-      {/* 10 — investment */}
-      <div className="border-t border-hair">
-        <InvestmentSection project={project} eyebrowIndex="10" />
-      </div>
-
-      {/* 11 — questions */}
-      <FaqSection project={project} eyebrowIndex="11" />
+      {/* 10 — questions */}
+      <FaqSection project={project} eyebrowIndex="10" />
 
       {/* other projects */}
       <section data-tone="light" className="border-t border-hair bg-paper-2 py-16 md:py-20">

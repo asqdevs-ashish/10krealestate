@@ -14,16 +14,21 @@ import { Action } from "@/components/ui/Action";
 /**
  * Editorial hero.
  *
- * Bone paper, ink type, and the film set into a single framed plate rather than
- * bled across the viewport — the page opens like a spread, not a billboard.
- * The film sits above the poster still, which sits above the drawn plate, so
- * the frame is never empty if the file is missing or the codec is unsupported.
- */
+ * Bone paper, ink type, and the photograph set into a single framed plate
+ * rather than bled across the viewport — the page opens like a spread, not a
+ * billboard. The still is the plate: the photograph sits above the drawn scene,
+ * and the optional film (`public/media/vault-hero.mp4`) fades in over the still
+ * only once it is actually decoding, so the frame is never empty whatever the
+ * network or codec does.
+ *
+ * This plate is deliberately flat. The one place the page renders rather than
+ * photographs is section 04, where the architecture is the subject. */
 export function Hero() {
   const project = getFlagship();
   const reduce = useReducedMotion();
   const root = useRef<HTMLDivElement>(null);
   const depth = useRef<HTMLDivElement>(null);
+  const plate = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const [delay, setDelay] = useState(0.15);
   const [filmReady, setFilmReady] = useState(false);
@@ -48,6 +53,8 @@ export function Hero() {
     setFilmReady(true);
   }, [reduce]);
 
+  const showFilm = filmReady && !reduce;
+
   // Only decode the film while it is on screen, and never in a hidden tab.
   useEffect(() => {
     const element = video.current;
@@ -61,7 +68,7 @@ export function Hero() {
     );
     observer.observe(element);
     return () => observer.disconnect();
-  }, [filmReady]);
+  }, [showFilm]);
 
   // The plate settles as the page scrolls away — the only continuous motion.
   useEffect(() => {
@@ -116,8 +123,11 @@ export function Hero() {
         </motion.div>
 
         {/* statement + plate */}
-        <div className="grid gap-12 py-12 xl:grid-cols-12 xl:items-end xl:gap-16 lg:py-16">
-          <div className="xl:col-span-5">
+        {/* Two columns from `lg`, so a laptop at 1024–1279 shows the statement
+            and the model side by side rather than stacking the plate below the
+            fold — the render is the point of the hero. */}
+        <div className="grid gap-12 py-12 lg:grid-cols-12 lg:items-end lg:py-16 xl:gap-16">
+          <div className="lg:col-span-5">
             <DisplayLines
               as="h1"
               animateOnMount
@@ -152,13 +162,14 @@ export function Hero() {
           </div>
 
           <motion.div
-            className="xl:col-span-7"
+            className="lg:col-span-7"
             initial={reduce ? undefined : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.4, delay: delay + 0.3, ease: EASE_LUXE }}
           >
             <div ref={depth} className="relative">
               <div
+                ref={plate}
                 data-hero-plate
                 className="relative aspect-[16/11] w-full overflow-hidden bg-paper-3"
                 style={{
@@ -171,10 +182,11 @@ export function Hero() {
                     media={project.hero}
                     decorative
                     overlay="none"
-                    priority
+                    preload
+                    sizes="(max-width: 1023px) 100vw, 58vw"
                     className="h-full w-full"
                   />
-                  {filmReady ? (
+                  {showFilm ? (
                     <video
                       ref={video}
                       className="absolute inset-0 h-full w-full object-cover"

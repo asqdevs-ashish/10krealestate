@@ -63,7 +63,13 @@ export function StorySection({
                     i % 2 === 0 ? "aspect-[16/11]" : "aspect-[4/5] xl:aspect-[3/4]",
                   )}
                 >
-                  <MediaPlate media={chapter.media} className="h-full w-full" caption index />
+                  <MediaPlate
+                    media={chapter.media}
+                    sizes="(max-width: 1279px) 92vw, 55vw"
+                    className="h-full w-full"
+                    caption
+                    index
+                  />
                 </Parallax>
               </ClipReveal>
 

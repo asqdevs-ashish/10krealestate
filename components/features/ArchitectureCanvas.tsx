@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useRef, type RefObject } from "react";
+import { useMemo, useRef, useState, type RefObject } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { GltfModel, type ModelSize } from "@/components/media/GltfModel";
 
 /**
  * Architectural scene.
@@ -11,21 +12,77 @@ import * as THREE from "three";
  * levels, deep balcony shadow — lit for dusk. The camera is choreographed by
  * scroll (exterior → arrival → lobby → residence → rooftop) with a little
  * pointer parallax. Nothing rotates for the sake of it.
+ *
+ * When a model is supplied (`public/models/architecture.glb`) it takes the
+ * place of the drawn massing, fitted to the same footprint and standing on the
+ * same ground plane, so the camera choreography, fog and lighting are unchanged.
+ * The drawn massing stays as the fallback the whole time — while the file
+ * loads, and for good if it is missing or fails.
  */
 
 type Quality = "high" | "low";
 
-const STAGES = [
-  { pos: [18.5, 7.2, 20], look: [0, 3.4, 0] },
-  { pos: [11.5, 2.9, 13.5], look: [0, 2.6, 0] },
-  { pos: [3.4, 2.1, 8.6], look: [0, 2.1, 0] },
-  { pos: [-4.6, 5.6, 7.4], look: [0, 4.7, 0] },
-  { pos: [-10.5, 10.2, 11], look: [0, 7.6, 0] },
+/**
+ * The drawn massing's own dimensions. The five camera stages below are authored
+ * as fractions of these, so the massing keeps exactly the path it was designed
+ * with — and a supplied model of a different proportion, a site model far wider
+ * than it is tall, is still framed at every stage rather than drifting over its
+ * roof.
+ */
+const REFERENCE: ModelSize = { width: 11.4, height: 9.6, depth: 7.8 };
+
+const STAGE_FRACTIONS = [
+  { pos: [1.6228, 0.75, 1.7544], look: 0.3542 }, // exterior
+  { pos: [1.0088, 0.3021, 1.1842], look: 0.2708 }, // arrival
+  { pos: [0.2982, 0.2188, 0.7544], look: 0.2188 }, // lobby
+  { pos: [-0.4035, 0.5833, 0.6491], look: 0.4896 }, // residence
+  { pos: [-0.9211, 1.0625, 0.9649], look: 0.7917 }, // rooftop
 ];
+
+/**
+ * The volume a supplied model is fitted into — the drawn massing's own
+ * footprint, so it sits in the same frame at the same scale.
+ */
+const MODEL_FIT = { width: 13, height: 9.6, depth: 10 };
+
+/**
+ * The colour the supplied model is graded towards. Site models arrive neutral —
+ * grey clay or white card — and a dusk sequence needs them warm. Kept light: this
+ * is a wash over the file's own textures, not a repaint.
+ */
+const MODEL_TINT = { color: "#ffd2a0", amount: 0.26 };
+
+/** The scene's own colours, so the drawn massing and the supplied model light alike. */
+const LIGHT = {
+  key: "#ffdcb0",
+  fill: "#8ea6c4",
+  rim: "#a9c6b0",
+  glow: "#ffb46c",
+} as const;
+
+type Stage = { pos: [number, number, number]; look: [number, number, number] };
+
+/**
+ * The path, rebuilt around the supplied model and the shape of the canvas.
+ *
+ * `zoom` moves the camera along its own line rather than changing the lens: a
+ * portrait canvas shows a fraction of the width a landscape one does, so the
+ * same distances would push the building right out of the frame on a phone. A
+ * single factor over the stage positions keeps every stage recognisably the
+ * same view, only further back.
+ */
+function buildStages(size: ModelSize, zoom: number): Stage[] {
+  const radius = Math.max(size.width, size.depth) || 1;
+  const height = size.height || 1;
+  return STAGE_FRACTIONS.map(({ pos, look }) => ({
+    pos: [pos[0] * radius * zoom, pos[1] * height * zoom, pos[2] * radius * zoom],
+    look: [0, look * height, 0],
+  }));
+}
 
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
-function CameraRig({ progress }: { progress: RefObject<number> }) {
+function CameraRig({ progress, stages }: { progress: RefObject<number>; stages: Stage[] }) {
   const { camera } = useThree();
   const pointer = useRef({ x: 0, y: 0 });
   const smooth = useRef(0);
@@ -36,12 +93,12 @@ function CameraRig({ progress }: { progress: RefObject<number> }) {
     const p = Math.min(1, Math.max(0, progress.current ?? 0));
     // damped follow so the move feels weighted rather than linear
     smooth.current += (p - smooth.current) * Math.min(1, delta * 3.2);
-    const scaled = smooth.current * (STAGES.length - 1);
-    const index = Math.min(STAGES.length - 2, Math.floor(scaled));
+    const scaled = smooth.current * (stages.length - 1);
+    const index = Math.min(stages.length - 2, Math.floor(scaled));
     const local = smoothstep(scaled - index);
 
-    const a = STAGES[index];
-    const b = STAGES[index + 1];
+    const a = stages[index];
+    const b = stages[index + 1];
 
     desired.set(
       a.pos[0] + (b.pos[0] - a.pos[0]) * local,
@@ -235,11 +292,22 @@ export default function ArchitectureCanvas({
   progress,
   quality = "high",
   frameloop = "always",
+  model = null,
+  zoom = 1,
 }: {
   progress: RefObject<number>;
   quality?: Quality;
   frameloop?: "always" | "never";
+  /** A supplied GLB standing in for the drawn massing. */
+  model?: string | null;
+  /** Multiplies the camera's distance — see buildStages. */
+  zoom?: number;
 }) {
+  // The path is rebuilt around whatever the model measures; the drawn massing's
+  // own dimensions are the default, which reproduces the authored path exactly.
+  const [size, setSize] = useState<ModelSize | null>(null);
+  const stages = useMemo(() => buildStages(size ?? REFERENCE, zoom), [size, zoom]);
+
   return (
     <Canvas
       dpr={quality === "high" ? [1, 1.75] : [1, 1.3]}
@@ -249,13 +317,37 @@ export default function ArchitectureCanvas({
       style={{ pointerEvents: "none" }}
     >
       <Sky progress={progress} />
-      <CameraRig progress={progress} />
-      <ambientLight intensity={0.42} />
-      <hemisphereLight args={["#c9d6e6", "#241f18", 0.35]} />
-      <directionalLight position={[14, 20, 9]} intensity={1.35} color="#ffe0b4" />
-      <directionalLight position={[-12, 8, -10]} intensity={0.5} color="#8ea6c4" />
-      <pointLight position={[3, 2.4, 5.4]} intensity={26} distance={16} color="#ffb46c" />
-      <Massing quality={quality} progress={progress} />
+      <CameraRig progress={progress} stages={stages} />
+
+      {/* Dusk, in four lights: warm key from the west, cool sky fill, a green
+          rim tying the building back to the site, and a low amber glow at the
+          door. The colours are shared with the drawn massing so the sequence
+          does not change temperature when the supplied model arrives. */}
+      <ambientLight intensity={0.5} />
+      <hemisphereLight args={["#c9d6e6", "#241f18", 0.42]} />
+      <directionalLight position={[14, 20, 9]} intensity={1.5} color={LIGHT.key} />
+      <directionalLight position={[-12, 8, -10]} intensity={0.62} color={LIGHT.fill} />
+      <directionalLight position={[-6, 4, 12]} intensity={0.4} color={LIGHT.rim} />
+      <pointLight position={[3, 2.4, 5.4]} intensity={30} distance={18} color={LIGHT.glow} />
+      {quality === "high" ? (
+        <pointLight position={[-4.5, 1.6, -4]} intensity={22} distance={16} color={LIGHT.glow} />
+      ) : null}
+
+      {model ? (
+        <GltfModel
+          url={model}
+          fit={MODEL_FIT}
+          anchor="base"
+          onMeasure={setSize}
+          progress={progress}
+          tint={MODEL_TINT.color}
+          tintAmount={MODEL_TINT.amount}
+          quality={quality}
+          fallback={<Massing quality={quality} progress={progress} />}
+        />
+      ) : (
+        <Massing quality={quality} progress={progress} />
+      )}
     </Canvas>
   );
 }

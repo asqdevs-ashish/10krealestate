@@ -20,7 +20,7 @@ const columns = [
     links: [
       { label: "Availability", href: "/availability" },
       { label: "Floor plans", href: "/#floor-plan" },
-      { label: "Investment outlook", href: "/#investment" },
+      { label: "Gallery", href: "/#gallery" },
       { label: "Schedule a viewing", href: "/book-a-viewing" },
     ],
   },

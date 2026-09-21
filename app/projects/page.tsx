@@ -57,6 +57,7 @@ export default function ProjectsPage() {
                 <ClipReveal>
                   <MediaPlate
                     media={flagship.hero}
+                    sizes="(max-width: 1279px) 92vw, 62vw"
                     className="h-[clamp(300px,52vw,660px)] w-full transition-transform duration-[1600ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.015]"
                     caption
                     index
@@ -195,6 +196,7 @@ export default function ProjectsPage() {
                 <ClipReveal delay={0.06}>
                   <MediaPlate
                     media={project.hero}
+                    sizes="(max-width: 1279px) 92vw, 55vw"
                     className={cn(
                       "w-full transition-transform duration-[1500ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.02]",
                       wide ? "h-[clamp(240px,34vw,440px)]" : "h-[clamp(280px,42vw,560px)]",

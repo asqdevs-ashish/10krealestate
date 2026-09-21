@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
 import type { MediaRef, MediaTone } from "@/data/types";
 import { cn } from "@/lib/format";
@@ -6,9 +7,15 @@ import { SceneLayer } from "./scenes";
 /**
  * Media frame.
  *
- * Renders one art-directed scene plate inside a tonal gradient. Set
- * `media.image` and the photograph fades in over the drawing — the drawing
- * stays as the loading state, so the layout never shows an empty box.
+ * Renders one art-directed scene plate inside a tonal gradient, and the
+ * photograph over it through the image optimizer — resized, served as AVIF or
+ * WebP, and downloaded at the size the plate is actually drawn at. `sizes` is
+ * what decides that last part, so it is worth passing on anything that is not a
+ * half-width grid cell; the default assumes roughly that, and the full-bleed
+ * plates say `100vw` explicitly.
+ *
+ * The drawn scene sits underneath as the loading state, so the frame is never
+ * an empty box while the photograph arrives.
  */
 
 type Tone = {
@@ -111,8 +118,12 @@ type Props = {
   index?: boolean;
   /** Decorative plates are hidden from assistive tech; content plates are described. */
   decorative?: boolean;
-  /** Above-the-fold plates load eagerly, so the LCP image is never deferred. */
-  priority?: boolean;
+  /** Above-the-fold plates preload, so the LCP image is never discovered late. */
+  preload?: boolean;
+  /** Rendered width per breakpoint — what the generated `srcset` is chosen from. */
+  sizes?: string;
+  /** 82 for the editorial plates, 68–75 for inset and thumbnail frames. */
+  quality?: number;
 };
 
 export function MediaPlate({
@@ -123,7 +134,9 @@ export function MediaPlate({
   caption = false,
   index = false,
   decorative = false,
-  priority = false,
+  preload = false,
+  sizes = "(max-width: 767px) 100vw, 55vw",
+  quality = 82,
 }: Props) {
   const preset = TONES[media.tone];
 
@@ -145,14 +158,14 @@ export function MediaPlate({
       </svg>
 
       {media.image ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={media.image}
           alt={decorative ? "" : media.alt}
-          loading={priority ? "eager" : "lazy"}
-          fetchPriority={priority ? "high" : "auto"}
-          decoding="async"
-          className="absolute inset-0 h-full w-full object-cover"
+          fill
+          sizes={sizes}
+          quality={quality}
+          preload={preload}
+          className="object-cover"
         />
       ) : null}
 

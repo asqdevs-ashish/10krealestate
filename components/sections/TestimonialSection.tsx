@@ -10,7 +10,7 @@ export function TestimonialSection() {
   return (
     <Section id="residents" tone="light">
       <div className="flex flex-col gap-6 md:flex-row md:items-baseline md:justify-between">
-        <Eyebrow index="10">Residents</Eyebrow>
+        <Eyebrow index="09">Residents</Eyebrow>
         <p className="u-label max-w-[34ch] text-faint">
           Buyer quotes are illustrative until verified copies are supplied
         </p>

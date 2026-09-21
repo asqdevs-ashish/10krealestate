@@ -21,7 +21,7 @@ import { Action } from "@/components/ui/Action";
  */
 export function FaqSection({
   project = getFlagship(),
-  eyebrowIndex = "12",
+  eyebrowIndex = "11",
 }: {
   project?: Project;
   eyebrowIndex?: string;

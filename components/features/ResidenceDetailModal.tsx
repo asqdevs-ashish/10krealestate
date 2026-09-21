@@ -48,6 +48,7 @@ export function ResidenceDetailModal({
         <div className="relative min-h-[16rem]">
           <MediaPlate
             media={config.media}
+            sizes="(max-width: 767px) 92vw, 45vw"
             className="h-full min-h-[16rem] w-full"
             overlay="soft"
             caption

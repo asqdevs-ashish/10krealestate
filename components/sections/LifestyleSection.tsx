@@ -40,7 +40,13 @@ export function LifestyleSection() {
       <div className="mt-20 grid gap-12 lg:mt-28 xl:grid-cols-12 xl:gap-16">
         <div className="xl:col-span-5">
           <Parallax amount={26} className="aspect-[3/4] w-full">
-            <MediaPlate media={wellness.media} className="h-full w-full" caption index />
+            <MediaPlate
+              media={wellness.media}
+              sizes="(max-width: 1279px) 92vw, 38vw"
+              className="h-full w-full"
+              caption
+              index
+            />
           </Parallax>
         </div>
         <div className="flex flex-col justify-center xl:col-span-6 xl:col-start-7">
@@ -79,7 +85,13 @@ export function LifestyleSection() {
         </div>
         <div className="xl:col-span-7">
           <Parallax amount={30} className="aspect-[4/3] w-full">
-            <MediaPlate media={social.media} className="h-full w-full" caption index />
+            <MediaPlate
+              media={social.media}
+              sizes="(max-width: 1279px) 92vw, 55vw"
+              className="h-full w-full"
+              caption
+              index
+            />
           </Parallax>
         </div>
       </div>
@@ -89,6 +101,7 @@ export function LifestyleSection() {
         <Parallax amount={34}>
           <MediaPlate
             media={priv.media}
+            sizes="(max-width: 767px) 92vw, 94vw"
             className="aspect-[16/9] w-full md:aspect-[21/9]"
             overlay="strong"
             caption

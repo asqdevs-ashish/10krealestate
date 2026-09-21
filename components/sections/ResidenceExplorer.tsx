@@ -155,6 +155,7 @@ export function ResidenceExplorer() {
                 >
                   <MediaPlate
                     media={active.media}
+                    sizes="(max-width: 1279px) 92vw, 62vw"
                     className="h-full w-full"
                     overlay="soft"
                     caption

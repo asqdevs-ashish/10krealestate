@@ -22,19 +22,20 @@ export function FinalCta() {
           scene: "night-skyline",
           tone: "night",
           image: media.nightSkyline,
-          index: "13",
+          index: "12",
           caption: `${project.locality}, looking south at 22:10`,
           alt: `Night view over Gurugram from the upper levels of ${project.name}`,
         }}
         decorative
         overlay="strong"
+        sizes="100vw"
         className="absolute inset-0 h-full w-full"
       />
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-ink/55" />
 
       <div className="relative mx-auto flex min-h-[92svh] w-full max-w-[110rem] flex-col justify-between px-6 py-24 md:px-10 md:py-32">
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-          <Eyebrow index="14">Contact</Eyebrow>
+          <Eyebrow index="13">Contact</Eyebrow>
           <p className="u-label max-w-[30ch] text-faint">
             Experience centre open {brand.contact.hours}
           </p>
@@ -67,12 +68,16 @@ export function FinalCta() {
                 >
                   {brand.contact.phone}
                 </a>
-                <a
-                  href={telHref(brand.contact.altPhoneHref)}
-                  className="u-num text-sm text-text/60 transition-colors duration-500 hover:text-accent-2"
-                >
-                  {brand.contact.altPhone}
-                </a>
+                {/* Both lines point at the same desk by default, so the second
+                    one is only rendered when it is genuinely a second number. */}
+                {brand.contact.altPhoneHref !== brand.contact.phoneHref ? (
+                  <a
+                    href={telHref(brand.contact.altPhoneHref)}
+                    className="u-num text-sm text-text/60 transition-colors duration-500 hover:text-accent-2"
+                  >
+                    {brand.contact.altPhone}
+                  </a>
+                ) : null}
               </div>
               <div className="flex flex-col gap-2">
                 <span className="u-label text-faint">Email</span>

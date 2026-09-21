@@ -24,7 +24,7 @@ export function DeveloperSection() {
     <Section id="developer" tone="dark">
       <div className="grid gap-14 xl:grid-cols-12 xl:gap-16">
         <div className="xl:col-span-7">
-          <Eyebrow index="11">The developer</Eyebrow>
+          <Eyebrow index="10">The developer</Eyebrow>
           <DisplayLines
             as="h2"
             lines={["We build places", "people want to", "come back to."]}
@@ -62,12 +62,13 @@ export function DeveloperSection() {
                 scene: "material-stone",
                 tone: "stone",
                 image: media.concrete,
-                index: "11",
+                index: "10",
                 caption: "Site studio · material selection",
                 alt: "Material selection on the studio floor",
               }}
               caption
               index
+              sizes="(max-width: 1279px) 92vw, 62vw"
               className="h-full w-full"
             />
           </Parallax>

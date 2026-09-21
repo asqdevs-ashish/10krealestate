@@ -72,3 +72,28 @@ export const HERO = {
   /** Shown in the corner of the hero while the film plays. */
   caption: "VAULT · Sector 58, Gurugram",
 } as const;
+
+/**
+ * The 3D model.
+ *
+ * Drop the file at exactly this path — nothing else changes:
+ *
+ *   public/models/architecture.glb   section 04, “Architecture in motion”
+ *
+ * The hero is a photograph on purpose (see `components/sections/Hero.tsx`);
+ * section 04 is the one place the page renders rather than photographs, and it
+ * is the only consumer of a model.
+ *
+ * The model is optional. It is checked with a HEAD request before anything is
+ * downloaded, so a file that has not been supplied yet costs one failed check
+ * and nothing else: the sequence keeps showing the drawn massing. Same for a
+ * device without WebGL or a visitor who asked for reduced motion.
+ *
+ * Keep the export light: the browser downloads the whole file, and both
+ * decoders are set up in `lib/gltf.ts`, so a Draco- or meshopt-compressed GLB
+ * with WebP textures loads as-is. The file that ships here went through glTF
+ * Transform first — see the README section, “The 3D model”.
+ */
+export const MODELS = {
+  architecture: "/models/architecture.glb",
+} as const;

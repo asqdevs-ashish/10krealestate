@@ -70,6 +70,7 @@ export function PageHero({
         <div className="mx-auto mt-14 w-full max-w-[110rem] px-6 md:mt-20 md:px-10">
           <MediaPlate
             media={media}
+            sizes="(max-width: 767px) 92vw, 94vw"
             className="aspect-[16/9] w-full md:aspect-[21/9]"
             caption
             index

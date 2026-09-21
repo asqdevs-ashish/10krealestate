@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { brand } from "@/data/brand";
 import { getFlagship } from "@/data";
 import { telHref, whatsappUrl, buildWhatsAppMessage } from "@/lib/whatsapp";
+import { media } from "@/data/media";
 import { Action } from "@/components/ui/Action";
 import { Eyebrow } from "@/components/ui/Label";
 import { Section } from "@/components/ui/Section";
@@ -78,12 +79,14 @@ export default function BookAViewingPage() {
               <Reveal delay={0.18} className="mt-12">
                 <MediaPlate
                   media={{
-                    scene: "arrival",
-                    tone: "night",
+                    scene: "lobby",
+                    tone: "interior",
+                    image: media.lobby,
                     index: "01",
                     caption: "Experience centre · Sector 58",
-                    alt: "The arrival court at the VAULT experience centre",
+                    alt: "The double-height lobby at the VAULT experience centre",
                   }}
+                  sizes="(max-width: 1535px) 92vw, 38vw"
                   className="aspect-[4/3] w-full"
                   caption
                   index
@@ -138,8 +141,8 @@ export default function BookAViewingPage() {
             <Action href="/availability" variant="quartz" arrow>
               View availability
             </Action>
-            <Action href="/#investment" variant="text" arrow>
-              Open the investment calculator
+            <Action href="/#experience" variant="text" arrow>
+              Walk the building in 3D
             </Action>
           </div>
         </div>

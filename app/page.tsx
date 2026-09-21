@@ -7,7 +7,6 @@ import { FloorPlanSection } from "@/components/sections/FloorPlanSection";
 import { LocationSection } from "@/components/sections/LocationSection";
 import { LifestyleSection } from "@/components/sections/LifestyleSection";
 import { GallerySection } from "@/components/sections/GallerySection";
-import { InvestmentSection } from "@/components/sections/InvestmentSection";
 import { AvailabilitySection } from "@/components/sections/AvailabilitySection";
 import { TestimonialSection } from "@/components/sections/TestimonialSection";
 import { DeveloperSection } from "@/components/sections/DeveloperSection";
@@ -32,7 +31,6 @@ export default function HomePage() {
       <LocationSection />
       <LifestyleSection />
       <GallerySection />
-      <InvestmentSection />
       <AvailabilitySection />
       <TestimonialSection />
       <DeveloperSection />

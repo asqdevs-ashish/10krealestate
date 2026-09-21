@@ -11,13 +11,19 @@ export const brand = {
   established: "2013",
   positioning: "Development, architecture and the long view.",
   contact: {
-    /** DEMO numbers — swap for the live sales/site numbers. */
-    phone: "+91 98100 45600",
-    phoneHref: "+919810045600",
-    altPhone: "+91 124 456 8800",
-    altPhoneHref: "+911244568800",
+    /**
+     * One line for the whole site. `phone` is what a visitor reads, `phoneHref`
+     * is what `tel:` dials and `whatsapp` is the same number in the digits-only
+     * form `wa.me` expects — so a call and a WhatsApp from any CTA on the site
+     * reach the same desk. Keep all three in step.
+     */
+    phone: "+91 74042 96309",
+    phoneHref: "+917404296309",
+    /** The landline, if the sales desk publishes one — the same line by default. */
+    altPhone: "+91 74042 96309",
+    altPhoneHref: "+917404296309",
     /** Digits only, no +, for wa.me links. */
-    whatsapp: "919810045600",
+    whatsapp: "917404296309",
     email: "residences@asquareddevs.com",
     siteOffice: "Site Experience Centre, Golf Course Road Extn., Sector 58, Gurugram 122011",
     hours: "Monday – Saturday, 10:00 – 19:00 IST",

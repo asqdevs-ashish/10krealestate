@@ -36,12 +36,6 @@ export default function TermsPage() {
           ],
         },
         {
-          title: "Investment figures",
-          copy: [
-            "The investment calculator is an arithmetic illustration. It uses the inputs you select and assumes a constant annual rate with no interim sale, no transaction costs and no taxes. It is not investment advice and it is not a projection of actual returns.",
-          ],
-        },
-        {
           title: "Regulatory",
           copy: [
             "Any RERA registration number shown on a project page is a placeholder. On launch, each project's registration number, promoter details and disclosure documents must be published as required by the Real Estate (Regulation and Development) Act, 2016.",

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getFlagship, listProjects, portfolioSummary } from "@/data";
+import { media } from "@/data/media";
 import { pad2 } from "@/lib/format";
 import { Eyebrow } from "@/components/ui/Label";
 import { CtaBand } from "@/components/ui/CtaBand";
@@ -50,6 +51,14 @@ export default function AvailabilityPage() {
           { label: "Residences", value: `${summary.residences} in total` },
           { label: "Updated", value: "14 September 2026" },
         ]}
+        media={{
+          scene: "tower-dusk",
+          tone: "dusk",
+          image: media.duskExterior,
+          index: "01",
+          caption: "Both towers · the west elevation at 19:20",
+          alt: "The two VAULT towers seen from the west at dusk",
+        }}
         actions={
           <Action href="/book-a-viewing" variant="primary" size="lg" arrow magnetic>
             Schedule a Private Viewing
