@@ -92,11 +92,23 @@ export function Hero() {
   useEffect(() => {
     if (reduce || !root.current) return;
     const ctx = gsap.context(() => {
-      gsap.fromTo(
-        "[data-hero-media]",
-        { scale: 1.1 },
-        { scale: 1, duration: 3.2, ease: "expo.out", delay },
-      );
+      /*
+       * The scroll-scrubbed drift stays. The scale-in on the media itself does
+       * not, and it is not a style preference — it was actively costing LCP.
+       *
+       * Scaling the element that contains the hero photograph changes the size
+       * the browser thinks the image is drawn at, after it has already chosen a
+       * `srcset` candidate. The result was a second, larger download starting
+       * once the tween began: first paint used one file and the layout pass
+       * fetched another. It re-selected on every scale change while the tween
+       * ran, which is why the mismatched pair changed (640/750, then 384/1080)
+       * but never disappeared.
+       *
+       * A 3.2s zoom on the one element that decides the LCP is not a trade worth
+       * making. The plate's entrance is carried by the transform keyframe on the
+       * column instead (see `hero-plate-in`), which moves the whole plate without
+       * changing the size of the image inside it.
+       */
       gsap.to("[data-hero-plate]", {
         yPercent: 6,
         ease: "none",
@@ -109,7 +121,7 @@ export function Hero() {
       });
     }, root);
     return () => ctx.revert();
-  }, [reduce, delay]);
+  }, [reduce]);
 
   const facts = [
     { label: "Residences", value: `${project.totalResidences} private residences` },
@@ -179,11 +191,24 @@ export function Hero() {
             </motion.div>
           </div>
 
-          <motion.div
+          {/*
+           * This column holds the LCP image, so it is deliberately NOT faded in
+           * from `opacity: 0`.
+           *
+           * An element at zero opacity is not an LCP candidate — the browser
+           * waits until it is actually visible before it will count the paint.
+           * Fading the photograph in meant the LCP clock did not start until the
+           * animation ran (0.3s delay + 1.4s), which is time the image had
+           * already spent loaded and sitting invisible.
+           *
+           * Only the transform is animated now, and the inset settle below gives
+           * the same "the plate opens" feel without ever hiding the paint.
+           */}
+          <div
             className="lg:col-span-7"
-            initial={reduce ? undefined : { opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.4, delay: delay + 0.3, ease: EASE_LUXE }}
+            style={{
+              animation: reduce ? undefined : "hero-plate-in 1.4s cubic-bezier(0.16,1,0.3,1) both",
+            }}
           >
             <div ref={depth} className="relative">
               <div
@@ -196,12 +221,37 @@ export function Hero() {
                 }}
               >
                 <div data-hero-media className="absolute inset-0">
+                  {/*
+                   * `sizes` has to describe the box this photograph is actually
+                   * drawn in. The browser picks which `srcset` candidate to
+                   *preload* from it before layout runs, so a value that
+                   * overstates the width preloads one candidate and then
+                   * downloads a larger one at layout — two fetches of the same
+                   * photograph, the second of which paints the LCP.
+                   *
+                   * The plate is not full-bleed. Below `lg` the grid is a single
+                   * column inside the page gutter, so the real width is
+                   * `viewport - 48px`, not the `100vw` that was declared before.
+                   *
+                   * These are plain `vw` values rather than `calc(100vw - 3rem)`,
+                   * because `calc()` is not valid in a `sizes` attribute — the
+                   * parser rejects the whole source size and falls back to `0`,
+                   * which silently picks the *smallest* candidate to preload and
+                   * guarantees the layout-time re-fetch this is meant to avoid.
+                   *
+                   * `94vw` is `viewport - 3rem` at 412px (padding is a fixed
+                   * 48px, so it is a slightly smaller fraction on wider phones —
+                   * under-declaring is safe here, it only costs a few pixels of
+                   * resolution, where over-declaring costs a second download).
+                   * `90vw` is `viewport - 5rem` at the `md` gutter. The last two
+                   * are the 7-of-12 column of the `max-w-[110rem]` grid.
+                   */}
                   <MediaPlate
                     media={project.hero}
                     decorative
                     overlay="none"
                     preload
-                    sizes="(max-width: 1023px) 100vw, 58vw"
+                    sizes="(max-width: 767px) 94vw, (max-width: 1023px) 90vw, (max-width: 1279px) 58vw, 50vw"
                     className="h-full w-full"
                   />
                   {showFilm ? (
@@ -235,7 +285,7 @@ export function Hero() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
 
         {/* facts + scroll cue */}

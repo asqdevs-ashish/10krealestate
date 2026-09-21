@@ -120,7 +120,15 @@ type Props = {
   decorative?: boolean;
   /** Above-the-fold plates preload, so the LCP image is never discovered late. */
   preload?: boolean;
-  /** Rendered width per breakpoint — what the generated `srcset` is chosen from. */
+  /**
+   * Rendered width per breakpoint — what the generated `srcset` is chosen from.
+   *
+   * This must describe the space the plate actually occupies, because Next emits
+   * it verbatim into the preload link and the browser picks its preload candidate
+   * from it *before* layout. A value that overstates the width preloads one
+   * candidate and then downloads a larger one at layout — two fetches of the same
+   * photograph, the second of which is the one that paints the LCP.
+   */
   sizes?: string;
   /** 82 for the editorial plates, 68–75 for inset and thumbnail frames. */
   quality?: number;
@@ -168,6 +176,7 @@ export function MediaPlate({
           className="object-cover"
         />
       ) : null}
+
 
       {decorative ? null : <span className="sr-only">{media.alt}</span>}
 

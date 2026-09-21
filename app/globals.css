@@ -418,6 +418,24 @@ html.lenis-smooth {
   }
 }
 
+/*
+ * The hero plate's entrance.
+ *
+ * Transform only — deliberately no opacity. This element contains the LCP
+ * image, and a zero-opacity element is not an LCP candidate, so fading it in
+ * would hold the LCP clock until the animation ran. Translating it keeps the
+ * "plate opens" feel while the photograph is painted and countable from the
+ * first frame.
+ */
+@keyframes hero-plate-in {
+  from {
+    transform: translate3d(0, 20px, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
 .u-pulse-ring {
   animation: u-pulse 3.4s var(--ease-luxe) infinite;
 }
@@ -431,7 +449,8 @@ html.lenis-smooth {
     scroll-behavior: auto;
   }
   .u-pulse-ring,
-  .u-scroll-hint {
+  .u-scroll-hint,
+  [style*="hero-plate-in"] {
     animation: none;
   }
   *,
