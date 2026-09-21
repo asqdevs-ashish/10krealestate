@@ -13,14 +13,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
   const projects = listProjects();
 
-  const staticRoutes: MetadataRoute.Sitemap = [
-    { url: absoluteUrl("/"), changeFrequency: "weekly", priority: 1 },
-    { url: absoluteUrl("/projects"), changeFrequency: "weekly", priority: 0.9 },
-    { url: absoluteUrl("/availability"), changeFrequency: "daily", priority: 0.9 },
-    { url: absoluteUrl("/book-a-viewing"), changeFrequency: "monthly", priority: 0.8 },
-    { url: absoluteUrl("/legal/privacy"), changeFrequency: "yearly", priority: 0.2 },
-    { url: absoluteUrl("/legal/terms"), changeFrequency: "yearly", priority: 0.2 },
-  ].map((route) => ({ ...route, lastModified }));
+  const staticRoutes: MetadataRoute.Sitemap = (
+    [
+      { url: absoluteUrl("/"), changeFrequency: "weekly", priority: 1 },
+      { url: absoluteUrl("/projects"), changeFrequency: "weekly", priority: 0.9 },
+      { url: absoluteUrl("/availability"), changeFrequency: "daily", priority: 0.9 },
+      { url: absoluteUrl("/book-a-viewing"), changeFrequency: "monthly", priority: 0.8 },
+      { url: absoluteUrl("/legal/privacy"), changeFrequency: "yearly", priority: 0.2 },
+      { url: absoluteUrl("/legal/terms"), changeFrequency: "yearly", priority: 0.2 },
+    ] as const
+  ).map((route) => ({ ...route, lastModified }));
 
   const projectRoutes: MetadataRoute.Sitemap = projects.map((project) => ({
     url: absoluteUrl(`/projects/${project.slug}`),

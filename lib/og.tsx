@@ -20,7 +20,7 @@ export const OG_SIZE = { width: 1200, height: 630 } as const;
 export const OG_CONTENT_TYPE = "image/png";
 
 /** Reading a photograph per request would re-hit the disk; the build reuses it. */
-const cache = new Map<string, Promise<string>>();
+const cache = new Map<string, Promise<string | null>>();
 
 async function photoDataUri(path: string): Promise<string | null> {
   if (!path.startsWith("/media/")) return null;
@@ -44,8 +44,8 @@ type Card = {
   summary: string;
   /** Right-hand figures: label over value. */
   facts: { label: string; value: string }[];
-  /** A photograph from /public, or null for a type-only card. */
-  image: string | null;
+  /** A photograph from /public, or null/absent for a type-only card. */
+  image?: string | null;
 };
 
 export async function ogCard({ eyebrow, lines, summary, facts, image }: Card) {

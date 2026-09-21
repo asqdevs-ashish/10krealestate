@@ -22,6 +22,6 @@ export default async function Image() {
       { label: "Possession", value: project.possession },
       { label: "Site", value: project.land },
     ],
-    image: project.hero.image,
+    image: project.hero.image ?? null,
   });
 }

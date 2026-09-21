@@ -44,6 +44,6 @@ export default async function Image({ params }: { params: Promise<{ slug: string
       { label: "Possession", value: project.possession },
       { label: "Site", value: project.land },
     ],
-    image: project.hero.image,
+    image: project.hero.image ?? null,
   });
 }
