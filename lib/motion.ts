@@ -122,6 +122,17 @@ export function usePointerDepth<T extends HTMLElement>(
     const current = { x: 0, y: 0 };
     let frame = 0;
 
+    // Measured once and re-measured on resize. Calling `getBoundingClientRect()`
+    // inside `pointermove` reads layout on every event — a forced synchronous
+    // reflow at up to 120 Hz, which is one of the "forced reflow" diagnostics
+    // PageSpeed reports. The element does not move between resizes, so the
+    // measurement is cached instead.
+    let rect = element.getBoundingClientRect();
+    const measure = () => {
+      rect = element.getBoundingClientRect();
+    };
+    window.addEventListener("resize", measure, { passive: true });
+
     // The loop exists only to settle the offset behind the pointer, so it stops
     // as soon as it has settled and starts again on the next movement. Leaving
     // it running would keep a frame callback alive for the life of the page,
@@ -143,7 +154,6 @@ export function usePointerDepth<T extends HTMLElement>(
     };
 
     const onMove = (event: PointerEvent) => {
-      const rect = element.getBoundingClientRect();
       target.x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
       target.y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
       move();
@@ -154,9 +164,11 @@ export function usePointerDepth<T extends HTMLElement>(
       move();
     };
 
-    element.addEventListener("pointermove", onMove);
+    // `passive` so the listener can never be asked to block the scroll.
+    element.addEventListener("pointermove", onMove, { passive: true });
     element.addEventListener("pointerleave", onLeave);
     return () => {
+      window.removeEventListener("resize", measure);
       element.removeEventListener("pointermove", onMove);
       element.removeEventListener("pointerleave", onLeave);
       if (frame) cancelAnimationFrame(frame);
@@ -262,8 +274,15 @@ export function useMagnetic<T extends HTMLElement>(strength = 6) {
     if (window.matchMedia("(pointer: coarse)").matches) return;
     if (prefersReducedMotion()) return;
 
+    // Same reasoning as usePointerDepth: the rect is cached rather than read on
+    // every pointer event, and re-measured only on resize.
+    let rect = element.getBoundingClientRect();
+    const measure = () => {
+      rect = element.getBoundingClientRect();
+    };
+    window.addEventListener("resize", measure, { passive: true });
+
     const onMove = (event: PointerEvent) => {
-      const rect = element.getBoundingClientRect();
       const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
       const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
       gsap.to(element, {
@@ -276,9 +295,10 @@ export function useMagnetic<T extends HTMLElement>(strength = 6) {
     const onLeave = () => {
       gsap.to(element, { x: 0, y: 0, duration: 0.7, ease: "expo.out" });
     };
-    element.addEventListener("pointermove", onMove);
+    element.addEventListener("pointermove", onMove, { passive: true });
     element.addEventListener("pointerleave", onLeave);
     return () => {
+      window.removeEventListener("resize", measure);
       element.removeEventListener("pointermove", onMove);
       element.removeEventListener("pointerleave", onLeave);
     };

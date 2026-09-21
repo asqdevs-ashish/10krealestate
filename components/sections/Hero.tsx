@@ -32,28 +32,46 @@ export function Hero() {
   const video = useRef<HTMLVideoElement>(null);
   const [delay, setDelay] = useState(0.15);
   const [filmReady, setFilmReady] = useState(false);
+  const [filmVisible, setFilmVisible] = useState(false);
 
   usePointerDepth(depth, 10);
 
-  // Hold the hero reveal until the first-visit transition has cleared.
-  useEffect(() => {
-    let seen = true;
-    try {
-      seen = Boolean(window.sessionStorage.getItem("asd-intro"));
-    } catch {
-      seen = true;
-    }
-    if (!seen && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setDelay(1.2);
-    }
-  }, []);
+  // The reveal no longer waits for the intro transition. Holding it back meant
+  // the hero — and therefore the LCP element — stayed unpainted for as long as
+  // the preloader was on screen, which is what the intro cost in the first place.
+  // The hero now animates immediately on mount and the (short) intro plays over
+  // the top of it, so the paint that decides the LCP is never deferred.
 
+  // The film is 1.5 MB. Rather than racing the LCP image for bandwidth the
+  // moment the page loads, it waits for the browser's window `load` — by which
+  // point the critical path (LCP image, fonts) is done — and only then starts
+  // downloading.
   useEffect(() => {
     if (reduce) return;
-    setFilmReady(true);
+    if (document.readyState === "complete") {
+      setFilmReady(true);
+      return;
+    }
+    const onLoad = () => setFilmReady(true);
+    window.addEventListener("load", onLoad, { once: true });
+    return () => window.removeEventListener("load", onLoad);
   }, [reduce]);
 
-  const showFilm = filmReady && !reduce;
+  // A second gate: the film is on screen, so it never downloads or decodes for a
+  // visitor who is already reading the section below (a deep link, or a jump
+  // straight to `#residences`).
+  useEffect(() => {
+    const element = root.current;
+    if (!element) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setFilmVisible(entry.isIntersecting),
+      { threshold: 0.05 },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  const showFilm = filmReady && filmVisible && !reduce;
 
   // Only decode the film while it is on screen, and never in a hidden tab.
   useEffect(() => {
@@ -191,12 +209,11 @@ export function Hero() {
                       ref={video}
                       className="absolute inset-0 h-full w-full object-cover"
                       src={HERO.video}
-                      poster={HERO.poster}
                       autoPlay
                       muted
                       loop
                       playsInline
-                      preload="auto"
+                      preload="none"
                       disablePictureInPicture
                       tabIndex={-1}
                       aria-hidden

@@ -44,9 +44,15 @@ export function ScrollSync() {
     // Scroll position is authoritative here — lag smoothing would interpolate
     // it and drift away from the real value during long frames.
     gsap.ticker.lagSmoothing(0);
-    ScrollTrigger.refresh();
+
+    // Refreshed on the next frame rather than synchronously. `refresh()`
+    // re-measures every trigger on the page — with a 420vh sticky section and
+    // fourteen sections below it, that is a long layout task landing squarely
+    // inside the TBT window on load. Deferring it lets the browser paint first.
+    const initialRefresh = requestAnimationFrame(() => ScrollTrigger.refresh());
 
     return () => {
+      cancelAnimationFrame(initialRefresh);
       lenis.off("scroll", syncScrollTrigger);
       gsap.ticker.remove(advanceLenis);
       gsap.ticker.lagSmoothing(500, 33);
@@ -56,12 +62,22 @@ export function ScrollSync() {
   useEffect(() => {
     if (!lenis) return;
 
-    const frame = requestAnimationFrame(() => {
-      lenis.resize();
-      ScrollTrigger.refresh();
+    // Two frames: the first lets React commit the new route's tree, the second
+    // measures it after the browser has laid it out. One frame is not always
+    // enough for a 14-section page, and a premature measure leaves triggers
+    // evaluated against the previous page's dimensions.
+    let inner = 0;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => {
+        lenis.resize();
+        ScrollTrigger.refresh();
+      });
     });
 
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(outer);
+      if (inner) cancelAnimationFrame(inner);
+    };
   }, [pathname, lenis]);
 
   // Opening the site always lands on the hero. Browser scroll restoration is

@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { getFlagship } from "@/data";
@@ -10,10 +11,16 @@ import { useMediaQuery } from "@/lib/motion";
 import { onSelectPlan } from "@/lib/events";
 import { Eyebrow } from "@/components/ui/Label";
 import { Action } from "@/components/ui/Action";
-import { Modal } from "@/components/ui/Modal";
 import { Section } from "@/components/ui/Section";
 import { DisplayLines, Reveal } from "@/components/motion/Reveal";
+// PlanDrawing is used in the section body, so it stays statically imported — it
+// is part of the page and must render on the server. The modal that holds the
+// *second* copy of it is not, so that is the one deferred.
 import { PlanDrawing } from "@/components/features/PlanDrawing";
+
+const Modal = dynamic(() => import("@/components/ui/Modal").then((m) => m.Modal), {
+  ssr: false,
+});
 
 /**
  * Floor plan experience.

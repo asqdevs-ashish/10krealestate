@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { getFlagship } from "@/data";
@@ -9,7 +10,16 @@ import { useMediaQuery } from "@/lib/motion";
 import { Eyebrow } from "@/components/ui/Label";
 import { Section } from "@/components/ui/Section";
 import { DisplayLines, Reveal } from "@/components/motion/Reveal";
-import { LocationMap } from "@/components/features/LocationMap";
+// The map is a decorative, non-crawlable canvas that draws nothing useful until
+// it is scrolled to, so it is fetched in the background after the page is
+// interactive rather than in the initial bundle.
+const LocationMap = dynamic(
+  () => import("@/components/features/LocationMap").then((m) => m.LocationMap),
+  {
+    ssr: false,
+    loading: () => <div className="aspect-[4/3] w-full bg-paper-3" />,
+  },
+);
 
 /**
  * Destinations advance on their own until the visitor takes over — the section

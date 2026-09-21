@@ -8,6 +8,12 @@ import { prefersReducedMotion, useLockBodyScroll } from "@/lib/motion";
 /**
  * First-visit loading transition. Runs once per session, never on route
  * changes, and is skipped entirely when reduced motion is requested.
+ *
+ * The overlay is deliberately short. It is opaque and covers the whole viewport,
+ * so for as long as it is up the browser has nothing contentful to report — and
+ * the hero behind it, which is the LCP element, cannot be painted. A 1.95s
+ * overlay is therefore a 1.95s LCP floor on every first visit, however fast the
+ * image itself arrives. The brand hit survives at a fraction of the cost.
  */
 export function Preloader() {
   const [stage, setStage] = useState<"in" | "out" | "gone">("gone");
@@ -26,7 +32,7 @@ export function Preloader() {
     if (seen || prefersReducedMotion()) return;
 
     setStage("in");
-    const out = window.setTimeout(() => setStage("out"), 1050);
+    const out = window.setTimeout(() => setStage("out"), 240);
     const done = window.setTimeout(() => {
       setStage("gone");
       try {
@@ -34,7 +40,7 @@ export function Preloader() {
       } catch {
         /* ignore */
       }
-    }, 1950);
+    }, 400);
     return () => {
       window.clearTimeout(out);
       window.clearTimeout(done);

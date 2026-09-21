@@ -1,7 +1,16 @@
+import dynamic from "next/dynamic";
 import { Eyebrow } from "@/components/ui/Label";
 import { Section } from "@/components/ui/Section";
 import { DisplayLines, Reveal } from "@/components/motion/Reveal";
-import { QualificationForm } from "@/components/features/QualificationForm";
+
+// The multi-step form is the heaviest interactive component on the page and sits
+// near the bottom of a very long document, so it is fetched after the shell is
+// interactive. The placeholder reserves the same height, so nothing shifts.
+const QualificationForm = dynamic(
+  () =>
+    import("@/components/features/QualificationForm").then((m) => m.QualificationForm),
+  { loading: () => <div className="min-h-[28rem] w-full" /> },
+);
 
 export function QualificationSection() {
   return (

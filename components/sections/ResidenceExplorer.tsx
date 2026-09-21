@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { availableCount, getFlagship, projectAvailability } from "@/data";
@@ -12,7 +13,14 @@ import { MediaPlate } from "@/components/media/MediaPlate";
 import { Section } from "@/components/ui/Section";
 import { Eyebrow } from "@/components/ui/Label";
 import { Action } from "@/components/ui/Action";
-import { ResidenceDetailModal } from "@/components/features/ResidenceDetailModal";
+// The detail modal is interaction-only — it cannot be open on first paint — so
+// it is fetched on first use rather than shipped in the initial bundle. `ssr:
+// false` is safe here for exactly that reason: there is no server-rendered state
+// for it to enter.
+const ResidenceDetailModal = dynamic(
+  () => import("@/components/features/ResidenceDetailModal").then((m) => m.ResidenceDetailModal),
+  { ssr: false },
+);
 
 const FEATURES_NOTE = "Furniture and styling for representation only.";
 

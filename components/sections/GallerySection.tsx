@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { getFlagship } from "@/data";
@@ -9,7 +10,11 @@ import { Eyebrow } from "@/components/ui/Label";
 import { Section } from "@/components/ui/Section";
 import { ClipReveal, DisplayLines, Reveal } from "@/components/motion/Reveal";
 import { MediaPlate } from "@/components/media/MediaPlate";
-import { Modal } from "@/components/ui/Modal";
+// Only fetched once a visitor opens a photograph. The modal mounts nothing
+// visible until then, so keeping it out of the initial bundle costs nothing.
+const Modal = dynamic(() => import("@/components/ui/Modal").then((m) => m.Modal), {
+  ssr: false,
+});
 
 /**
  * Editorial gallery.
