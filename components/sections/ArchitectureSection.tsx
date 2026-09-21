@@ -98,15 +98,29 @@ export function ArchitectureSection() {
 
   // Choose the renderer. The canvas mounts in the commit *after* this effect,
   // so the filter below is already in place by the time three is constructed.
+  //
+  // Phones get the plates, and this is the single most valuable branch on the
+  // page: three.js is a 961 KB chunk — 47% of everything the site ships — and
+  // `next/dynamic` only defers *when* it arrives, not whether. Deciding here
+  // means the phone never asks for it at all, so the chunk is never fetched,
+  // parsed or executed and there is no long task on scroll.
+  //
+  // It is also the better render on a phone. The camera pulls back to 1.3× at
+  // this width anyway, and a scrubbed WebGL sequence on a mid-range device runs
+  // far from its frame budget. The plates are the same five stages from the
+  // same records, cost no JavaScript, and are what the section is for.
+  //
+  // `isMobile` is the shared hook, so the decision is made against one
+  // breakpoint rather than two that could drift apart.
   useEffect(() => {
-    if (reduce || !supportsWebGL()) {
+    if (reduce || isMobile || !supportsWebGL()) {
       setMode("plates");
       return undefined;
     }
     const restore = silenceThreeClockNotice();
     setMode("3d");
     return restore;
-  }, [reduce]);
+  }, [reduce, isMobile]);
 
   // The supplied model is optional and is checked before the canvas asks for
   // it, so the sequence cannot fail on a file that is not there yet.

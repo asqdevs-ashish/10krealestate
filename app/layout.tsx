@@ -22,14 +22,20 @@ const sans = Instrument_Sans({
 const display = Instrument_Serif({
   subsets: ["latin"],
   weight: "400",
-  style: ["normal", "italic"],
+  // The italic face is never rendered: nothing on the site sets `font-style:
+  // italic`, and `.u-display` (the only consumer of this family) declares only a
+  // weight. Loading it as well pulled a second file onto the critical path, and
+  // both faces were preloaded on every page.
   variable: "--font-instrument-serif",
   display: "swap",
 });
 
 const mono = IBM_Plex_Mono({
   subsets: ["latin"],
-  weight: ["400", "500"],
+  // 400 only. `.u-num` is the sole mono consumer and declares no weight, so it
+  // renders at 400; the 500 file was downloaded and never used. (The weight-500
+  // rule in the stylesheet is `.u-label`, which is the *sans* family.)
+  weight: ["400"],
   variable: "--font-plex-mono",
   display: "swap",
 });
